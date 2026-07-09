@@ -2,7 +2,7 @@ import { AIModelConfig, AISqlResponse, ChatMessage } from '../../renderer/src/se
 import { DatabaseSchema } from '../../renderer/src/services/db/types'
 
 // Load OpenRouter API Key from environment variables
-const OPENROUTER_API_KEY: string = ((import.meta.env as any).MAIN_VITE_OPENROUTER_API_KEY as string) || (process.env.OPENROUTER_API_KEY as string) || ''
+const OPENROUTER_API_KEY: string = process.env.OPENROUTER_API_KEY || ''
 
 // Schema compression helper to reduce token size and fit schema inside token limits
 function compressSchema(schema: DatabaseSchema | null): string {
