@@ -10,7 +10,8 @@ import {
   CheckCircle,
   HelpCircle,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Pencil
 } from 'lucide-react'
 import { useChatStore } from '../../store/chatStore'
 import { useConnectionStore } from '../../store/connectionStore'
@@ -26,14 +27,66 @@ const Chat: React.FC = () => {
     deleteThread,
     setActiveThreadId,
     addMessage,
-    setIsGenerating
+    setIsGenerating,
+    renameThread
   } = useChatStore()
 
-  const { activeConnection } = useConnectionStore()
+  const {
+    activeConnection,
+    savedConnections,
+    setActiveConnection,
+    setConnectionStatus,
+    connectionStatus
+  } = useConnectionStore()
+  
   const { selectedModel, safeMode } = useSettingsStore()
 
   const [input, setInput] = React.useState('')
+  const [editingThreadId, setEditingThreadId] = React.useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = React.useState('')
+  
   const chatEndRef = React.useRef<HTMLDivElement>(null)
+
+  const handleStartRename = (id: string, currentTitle: string) => {
+    setEditingThreadId(id)
+    setEditingTitle(currentTitle)
+  }
+
+  const handleSaveRename = (id: string) => {
+    if (editingTitle.trim()) {
+      renameThread(id, editingTitle.trim())
+    }
+    setEditingThreadId(null)
+  }
+
+  const handleDatabaseChange = async (connId: string) => {
+    if (!connId) {
+      try {
+        await window.electron.ipcRenderer.invoke('db:disconnect')
+      } catch (err) {
+        console.error('Failed to disconnect database:', err)
+      }
+      setActiveConnection(null)
+      setConnectionStatus('disconnected')
+      return
+    }
+
+    const conn = savedConnections.find((c) => c.id === connId)
+    if (!conn) return
+
+    setConnectionStatus('connecting')
+    try {
+      const success = await window.electron.ipcRenderer.invoke('db:connect', conn)
+      if (success) {
+        setActiveConnection(conn)
+        setConnectionStatus('connected')
+      } else {
+        setConnectionStatus('error', 'Failed to connect to database.')
+      }
+    } catch (e: any) {
+      setConnectionStatus('error', e.message || String(e))
+    }
+  }
 
   // Auto-scroll to bottom of chat
   React.useEffect(() => {
@@ -158,19 +211,53 @@ const Chat: React.FC = () => {
                 )}
                 onClick={() => setActiveThreadId(t.id)}
               >
-                <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
                   <MessageSquare className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{t.title}</span>
+                  {editingThreadId === t.id ? (
+                    <input
+                      type="text"
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onBlur={() => handleSaveRename(t.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveRename(t.id)
+                        if (e.key === 'Escape') setEditingThreadId(null)
+                      }}
+                      className="bg-card border border-border/80 focus:border-primary/50 outline-none text-xs rounded px-1 w-full text-foreground py-0.5"
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span
+                      className="truncate select-none cursor-pointer"
+                      onDoubleClick={() => handleStartRename(t.id, t.title)}
+                    >
+                      {t.title}
+                    </span>
+                  )}
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    deleteThread(t.id)
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {editingThreadId !== t.id && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleStartRename(t.id, t.title)
+                      }}
+                      className="p-0.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteThread(t.id)
+                      }}
+                      className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -357,39 +444,69 @@ const Chat: React.FC = () => {
 
         {/* Input Dock Area */}
         <div className="p-4 border-t border-border bg-card/10 select-none">
-          <form onSubmit={handleSend} className="max-w-3xl mx-auto flex items-center gap-3 relative">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder={
-                  !activeThreadId 
-                    ? "Create a conversation thread first..." 
-                    : activeConnection
-                    ? "Ask your database in natural language..."
-                    : "Connect to a DB first to enable execution, or write a schema prompt..."
-                }
-                disabled={!activeThreadId || isGenerating}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="w-full bg-card/40 border border-border/80 focus:border-primary/50 focus:ring-1 focus:ring-primary/40 rounded-xl px-4 py-3 text-xs placeholder-muted-foreground outline-none text-foreground transition-all pr-12"
-              />
-              <button
-                type="submit"
-                disabled={!activeThreadId || !input.trim() || isGenerating}
-                className={cn(
-                  "absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-white transition-all shadow-sm",
-                  input.trim() && activeThreadId && !isGenerating
-                    ? "bg-primary hover:bg-primary/90"
-                    : "bg-muted text-muted-foreground cursor-not-allowed"
-                )}
-              >
-                <Send className="h-3.5 w-3.5" />
-              </button>
+          <form onSubmit={handleSend} className="max-w-3xl mx-auto">
+            <div className="flex gap-2 w-full">
+              {/* Database Dropdown Selector */}
+              <div className="relative shrink-0">
+                <select
+                  value={activeConnection?.id || ''}
+                  onChange={(e) => handleDatabaseChange(e.target.value)}
+                  disabled={isGenerating}
+                  className="bg-card/40 border border-border/80 text-foreground text-xs rounded-xl pl-3 pr-8 py-3 outline-none focus:border-primary/50 cursor-pointer h-full appearance-none select-none max-w-[160px] truncate"
+                >
+                  <option value="" className="bg-background">🔌 Disconnected</option>
+                  {savedConnections.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-background">
+                      📦 {c.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-muted-foreground">
+                  <Database className="h-3.5 w-3.5" />
+                </div>
+              </div>
+
+              {/* Chat Input Text Box */}
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder={
+                    !activeThreadId 
+                      ? "Create a conversation thread first..." 
+                      : activeConnection
+                      ? `Ask database '${activeConnection.name}' in natural language...`
+                      : "Select database from dropdown first to query..."
+                  }
+                  disabled={!activeThreadId || isGenerating || (savedConnections.length > 0 && !activeConnection)}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="w-full bg-card/40 border border-border/80 focus:border-primary/50 focus:ring-1 focus:ring-primary/40 rounded-xl px-4 py-3 text-xs placeholder-muted-foreground outline-none text-foreground transition-all pr-12"
+                />
+                <button
+                  type="submit"
+                  disabled={!activeThreadId || !input.trim() || isGenerating}
+                  className={cn(
+                    "absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-white transition-all shadow-sm",
+                    input.trim() && activeThreadId && !isGenerating
+                      ? "bg-primary hover:bg-primary/90"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                  )}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           </form>
           <div className="max-w-3xl mx-auto mt-2 flex justify-between items-center text-[10px] text-muted-foreground px-2">
             <span>Model: {selectedModel}</span>
-            <span>Ensure credentials are configured securely in Settings</span>
+            <span>
+              {connectionStatus === 'connecting' && <span className="text-amber-400 font-semibold animate-pulse">🔌 Connecting to database...</span>}
+              {connectionStatus === 'error' && <span className="text-red-400 font-semibold">❌ Connection failed</span>}
+              {connectionStatus === 'connected' && activeConnection && (
+                <span className="text-emerald-400 font-semibold">🟢 Connected to {activeConnection.name}</span>
+              )}
+              {connectionStatus === 'disconnected' && <span>No database active</span>}
+            </span>
           </div>
         </div>
       </div>

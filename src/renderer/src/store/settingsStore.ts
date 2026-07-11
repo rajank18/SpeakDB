@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export type AIProviderType = 'openrouter' | 'ollama' | 'openai' | 'gemini'
 
@@ -29,40 +30,47 @@ const DEFAULT_MODELS: Record<AIProviderType, string> = {
   gemini: 'gemini-1.5-pro'
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
-  aiProvider: 'openrouter',
-  openRouterKey: '',
-  openAIKey: '',
-  geminiKey: '',
-  ollamaUrl: 'http://localhost:11434',
-  selectedModel: 'poolside/laguna-xs-2.1:free',
-  theme: 'dark',
-  safeMode: true,
-  maxRows: 100,
+export const useSettingsStore = create<SettingsState>()(
+  persist(
+    (set) => ({
+      aiProvider: 'openrouter',
+      openRouterKey: '',
+      openAIKey: '',
+      geminiKey: '',
+      ollamaUrl: 'http://localhost:11434',
+      selectedModel: 'poolside/laguna-xs-2.1:free',
+      theme: 'dark',
+      safeMode: true,
+      maxRows: 100,
 
-  setAIProvider: (provider) =>
-    set(() => ({
-      aiProvider: provider,
-      selectedModel: DEFAULT_MODELS[provider]
-    })),
+      setAIProvider: (provider) =>
+        set(() => ({
+          aiProvider: provider,
+          selectedModel: DEFAULT_MODELS[provider]
+        })),
 
-  setAPIKey: (provider, key) =>
-    set(() => {
-      const field = provider === 'openrouter'
-        ? 'openRouterKey'
-        : provider === 'openai'
-        ? 'openAIKey'
-        : 'geminiKey'
-      return { [field]: key }
+      setAPIKey: (provider, key) =>
+        set(() => {
+          const field = provider === 'openrouter'
+            ? 'openRouterKey'
+            : provider === 'openai'
+            ? 'openAIKey'
+            : 'geminiKey'
+          return { [field]: key }
+        }),
+
+      setOllamaUrl: (url) => set({ ollamaUrl: url }),
+      
+      setSelectedModel: (model) => set({ selectedModel: model }),
+      
+      setTheme: (theme) => set({ theme }),
+      
+      setSafeMode: (safe) => set({ safeMode: safe }),
+      
+      setMaxRows: (rows) => set({ maxRows: rows })
     }),
-
-  setOllamaUrl: (url) => set({ ollamaUrl: url }),
-  
-  setSelectedModel: (model) => set({ selectedModel: model }),
-  
-  setTheme: (theme) => set({ theme }),
-  
-  setSafeMode: (safe) => set({ safeMode: safe }),
-  
-  setMaxRows: (rows) => set({ maxRows: rows })
-}))
+    {
+      name: 'speakdb-settings'
+    }
+  )
+)

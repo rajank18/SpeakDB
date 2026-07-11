@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface DBConnection {
   id: string
@@ -26,43 +27,51 @@ interface ConnectionState {
   updateConnection: (id: string, updates: Partial<DBConnection>) => void
 }
 
-export const useConnectionStore = create<ConnectionState>((set) => ({
-  activeConnection: null,
-  savedConnections: [],
-  connectionStatus: 'disconnected',
-  error: null,
+export const useConnectionStore = create<ConnectionState>()(
+  persist(
+    (set) => ({
+      activeConnection: null,
+      savedConnections: [],
+      connectionStatus: 'disconnected',
+      error: null,
 
-  setActiveConnection: (conn) => set({ activeConnection: conn }),
-  
-  setConnectionStatus: (status, error = null) => set({ connectionStatus: status, error }),
+      setActiveConnection: (conn) => set({ activeConnection: conn }),
+      
+      setConnectionStatus: (status, error = null) => set({ connectionStatus: status, error }),
 
-  addConnection: (conn) =>
-    set((state) => {
-      const newConn: DBConnection = {
-        ...conn,
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString()
-      }
-      return { savedConnections: [...state.savedConnections, newConn] }
+      addConnection: (conn) =>
+        set((state) => {
+          const newConn: DBConnection = {
+            ...conn,
+            id: crypto.randomUUID(),
+            createdAt: new Date().toISOString()
+          }
+          return { savedConnections: [...state.savedConnections, newConn] }
+        }),
+
+      removeConnection: (id) =>
+        set((state) => ({
+          savedConnections: state.savedConnections.filter((c) => c.id !== id),
+          activeConnection: state.activeConnection?.id === id ? null : state.activeConnection
+        })),
+
+      updateConnection: (id, updates) =>
+        set((state) => {
+          const updated = state.savedConnections.map((c) =>
+            c.id === id ? { ...c, ...updates } : c
+          )
+          const active = state.activeConnection?.id === id
+            ? { ...state.activeConnection, ...updates }
+            : state.activeConnection
+          return {
+            savedConnections: updated,
+            activeConnection: active
+          }
+        })
     }),
-
-  removeConnection: (id) =>
-    set((state) => ({
-      savedConnections: state.savedConnections.filter((c) => c.id !== id),
-      activeConnection: state.activeConnection?.id === id ? null : state.activeConnection
-    })),
-
-  updateConnection: (id, updates) =>
-    set((state) => {
-      const updated = state.savedConnections.map((c) =>
-        c.id === id ? { ...c, ...updates } : c
-      )
-      const active = state.activeConnection?.id === id
-        ? { ...state.activeConnection, ...updates }
-        : state.activeConnection
-      return {
-        savedConnections: updated,
-        activeConnection: active
-      }
-    })
-}))
+    {
+      name: 'speakdb-connections',
+      partialize: (state) => ({ savedConnections: state.savedConnections, activeConnection: state.activeConnection })
+    }
+  )
+)

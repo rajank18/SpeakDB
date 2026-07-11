@@ -1,9 +1,6 @@
 import { AIModelConfig, AISqlResponse, ChatMessage } from '../../renderer/src/services/ai/types'
 import { DatabaseSchema } from '../../renderer/src/services/db/types'
 
-// Load OpenRouter API Key from environment variables
-const OPENROUTER_API_KEY: string = process.env.OPENROUTER_API_KEY || ''
-
 // Schema compression helper to reduce token size and fit schema inside token limits
 function compressSchema(schema: DatabaseSchema | null): string {
   if (!schema || !schema.tables || schema.tables.length === 0) return 'No tables found in public schema.'
@@ -33,14 +30,14 @@ function compressSchema(schema: DatabaseSchema | null): string {
 export class AIManager {
   private verifyAPIKey(config: AIModelConfig) {
     if (config.provider === 'ollama') return
-    const key = OPENROUTER_API_KEY || config.apiKey || ''
+    const key = process.env.OPENROUTER_API_KEY || config.apiKey || ''
     if (!key) {
       throw new Error('AI API Key is missing. Please add it to your .env file or add it in Settings.')
     }
   }
 
   private getHeaders(config: AIModelConfig) {
-    const key = OPENROUTER_API_KEY || config.apiKey || ''
+    const key = process.env.OPENROUTER_API_KEY || config.apiKey || ''
     return {
       'Authorization': `Bearer ${key}`,
       'Content-Type': 'application/json',

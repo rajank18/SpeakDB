@@ -23,8 +23,28 @@ export const AppLayout: React.FC = () => {
   const [collapsed, setCollapsed] = React.useState(false)
   const location = useLocation()
   
-  const { activeConnection, connectionStatus } = useConnectionStore()
+  const { activeConnection, connectionStatus, setConnectionStatus } = useConnectionStore()
   const { aiProvider, selectedModel } = useSettingsStore()
+
+  React.useEffect(() => {
+    const autoConnect = async () => {
+      if (activeConnection && connectionStatus !== 'connected') {
+        setConnectionStatus('connecting')
+        try {
+          const success = await window.electron.ipcRenderer.invoke('db:connect', activeConnection)
+          if (success) {
+            setConnectionStatus('connected')
+          } else {
+            setConnectionStatus('error', 'Auto-connect failed')
+          }
+        } catch (err) {
+          console.error('Auto-connect database error:', err)
+          setConnectionStatus('error', String(err))
+        }
+      }
+    }
+    autoConnect()
+  }, [])
 
   const navItems = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
