@@ -1,14 +1,12 @@
 import { createHashRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 
-// Lazy loaded page components or direct imports. Direct imports are fine for setup.
-import Dashboard from '../pages/Dashboard'
+// Page components
 import Chat from '../pages/Chat'
 import Connections from '../pages/Connections'
 import Schema from '../pages/Schema'
 import History from '../pages/History'
 import Settings from '../pages/Settings'
-import About from '../pages/About'
 
 export const router = createHashRouter([
   {
@@ -17,11 +15,7 @@ export const router = createHashRouter([
     children: [
       {
         path: '',
-        element: <Navigate to="/dashboard" replace />
-      },
-      {
-        path: 'dashboard',
-        element: <Dashboard />
+        element: <Navigate to="/chat" replace />
       },
       {
         path: 'chat',
@@ -44,12 +38,8 @@ export const router = createHashRouter([
         element: <Settings />
       },
       {
-        path: 'about',
-        element: <About />
-      },
-      {
         path: '*',
-        element: <Navigate to="/dashboard" replace />
+        element: <Navigate to="/chat" replace />
       }
     ]
   }

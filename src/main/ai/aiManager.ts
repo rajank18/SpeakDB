@@ -248,6 +248,61 @@ Answer user questions about the database catalog or SQL. Be concise.`
     const data = await res.json()
     return data.choices?.[0]?.message?.content || ''
   }
+
+  /**
+   * Interprets database query results in natural language
+   */
+  public async interpretResults(
+    question: string,
+    sql: string,
+    queryResult: any,
+    config: AIModelConfig
+  ): Promise<string> {
+    this.verifyAPIKey(config)
+
+    // Compress database results to save tokens:
+    // 1. Limit rows (take max 25 rows)
+    // 2. Map properties to compact pipe-separated string
+    const columns = queryResult.columns || []
+    const rows = (queryResult.rows || []).slice(0, 25)
+    
+    const headers = columns.join('|')
+    const dataRows = rows.map((r: any) => 
+      columns.map((c: string) => String(r[c] !== null && r[c] !== undefined ? r[c] : '')).join('|')
+    ).join('\n')
+    const compressedData = `${headers}\n${dataRows}`
+
+    const systemPrompt = `You are a database analyst. The user asked a question and we executed an SQL query to get the answer.
+User Question: "${question}"
+Executed SQL: \`${sql}\`
+
+Here are the database results (in compact pipe-separated format):
+${compressedData}
+
+Provide a concise, direct answer to the user's question in plain English based on the data. Do not refer to the table or column names unless necessary. Keep it simple, friendly, and non-technical.`
+
+    const url = 'https://openrouter.ai/api/v1/chat/completions'
+    const model = config.modelName || 'poolside/laguna-xs-2.1:free'
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: this.getHeaders(config),
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt }
+        ]
+      })
+    })
+
+    if (!res.ok) {
+      const errText = await res.text()
+      throw new Error(`OpenRouter interpretation failed: ${res.statusText} (${errText})`)
+    }
+
+    const data = await res.json()
+    return data.choices?.[0]?.message?.content || 'No interpretation generated.'
+  }
 }
 
 export const aiManager = new AIManager()

@@ -6,35 +6,44 @@
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Warm cream paper background */
+    --background: 45 43% 97.6%;
+    --foreground: 0 0% 16.9%;
 
-    --card: 240 10% 5.9%;
-    --card-foreground: 0 0% 98%;
+    /* Pure elevated white cards and containers */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 16.9%;
 
-    --popover: 240 10% 4.9%;
-    --popover-foreground: 0 0% 98%;
+    /* Popover backgrounds */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 16.9%;
 
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 20% 98%;
+    /* Coral accent color */
+    --primary: 11.5 73.5% 66.5%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 4.8% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    /* Soft coral tint for hover/active pill backgrounds */
+    --secondary: 15.5 75.6% 92.4%;
+    --secondary-foreground: 11.5 73.5% 66.5%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    /* Muted colors */
+    --muted: 44 20% 92%;
+    --muted-foreground: 0 0% 42%;
 
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent token mapping */
+    --accent: 15.5 75.6% 92.4%;
+    --accent-foreground: 11.5 73.5% 66.5%;
 
-    --destructive: 346.8 77.2% 49.8%;
-    --destructive-foreground: 355.7 100% 97.3%;
+    --destructive: 0 74% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 263.4 70% 50.4%;
+    /* Hairline borders */
+    --border: 44 20% 87.6%;
+    --input: 44 20% 87.6%;
+    --ring: 11.5 73.5% 66.5%;
 
-    --radius: 0.75rem;
+    /* Rounded pill default radius */
+    --radius: 999px;
   }
 }
 
@@ -56,10 +65,10 @@
   }
 }
 
-/* Custom scrollbar styles */
+/* Custom scrollbar styles matching minimal theme */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -67,25 +76,17 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
+  background: hsl(var(--border));
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--muted-foreground) / 0.3);
 }
 
-/* Class to style active elements */
-.active-nav-item {
-  background-color: hsl(var(--primary) / 0.15);
-  color: hsl(var(--primary-foreground));
-  border-left: 3px solid hsl(var(--primary));
-}
-
-/* Glassmorphism utility */
-.glass-panel {
-  background: rgba(20, 20, 25, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+/* Codeblock overrides */
+.code-card {
+  background-color: #F4F1E9;
+  color: #3A3A3A;
+  font-family: 'Fira Code', monospace;
 }

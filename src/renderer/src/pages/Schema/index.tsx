@@ -81,18 +81,18 @@ const Schema: React.FC = () => {
   const selectedTable = mockTables.find((t) => t.name === selectedTableName) || mockTables[0]
 
   return (
-    <div className="flex h-[calc(100vh-80px)] m-[-24px] overflow-hidden animate-fade-in">
-      
+    <div className="flex h-[calc(100vh-80px)] mx-[-20px] mb-[-32px] overflow-hidden animate-fade-in">
+
       {/* Sidebar List */}
-      <div className="w-64 border-r border-border bg-card/20 flex flex-col shrink-0 select-none">
-        <div className="p-4 border-b border-border">
+      <div className="w-64 border-r border-border bg-transparent flex flex-col shrink-0 select-none">
+        <div className="p-4 pl-8 border-b border-border">
           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
             <Layers className="h-4 w-4 text-primary" />
             <span>SCHEMA TABLES ({activeConnection ? mockTables.length : 'Offline'})</span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        <div className="flex-1 overflow-y-auto p-2 pl-5 space-y-1">
           {!activeConnection ? (
             <div className="text-center text-xs text-muted-foreground p-6 mt-4">
               Connect database to explore schema. Showing sandbox layout.

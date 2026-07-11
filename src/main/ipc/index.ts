@@ -40,4 +40,8 @@ export function registerIPCHandlers(): void {
   ipcMain.handle('ai:chat', async (_, history, schema, config) => {
     return aiManager.chat(history, schema, config)
   })
+
+  ipcMain.handle('ai:interpret-results', async (_, question, sql, queryResult, config) => {
+    return aiManager.interpretResults(question, sql, queryResult, config)
+  })
 }

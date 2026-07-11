@@ -16,6 +16,7 @@ export interface Message {
   sql?: string // If AI generated SQL
   queryResult?: QueryResult // If SQL was executed
   isError?: boolean
+  interpretation?: string
 }
 
 export interface ChatThread {
