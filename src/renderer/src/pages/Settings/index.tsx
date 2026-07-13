@@ -39,7 +39,7 @@ const Settings: React.FC = () => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     settings.setAIProvider(aiProvider)
     settings.setAPIKey('openrouter', openRouterKey)
     settings.setAPIKey('openai', openAIKey)
@@ -61,7 +61,7 @@ const Settings: React.FC = () => {
   ] as const
 
   return (
-    <form onSubmit={handleSave} className="space-y-6 max-w-3xl animate-fade-in select-none">
+    <form onSubmit={handleSave} className="space-y-6 max-w-3xl mx-auto animate-fade-in select-none">
       <div className="flex items-center justify-between border-b border-border pb-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -72,7 +72,7 @@ const Settings: React.FC = () => {
         </div>
         <button
           type="submit"
-          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/95 transition-all"
+          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground  hover:bg-primary/95 transition-all"
         >
           {savedSuccess ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
           <span>{savedSuccess ? 'Settings Saved' : 'Save Changes'}</span>

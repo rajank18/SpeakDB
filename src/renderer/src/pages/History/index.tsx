@@ -75,8 +75,8 @@ const History: React.FC = () => {
   }
 
   const filteredItems = historyItems.filter((item) => {
-    const matchesSearch = item.sql.toLowerCase().includes(search.toLowerCase()) || 
-                          item.connectionName.toLowerCase().includes(search.toLowerCase())
+    const matchesSearch = item.sql.toLowerCase().includes(search.toLowerCase()) ||
+      item.connectionName.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -92,7 +92,7 @@ const History: React.FC = () => {
           </h2>
           <p className="text-xs text-muted-foreground">Audit logs of all natural language generations and SQL query executions.</p>
         </div>
-        
+
         {/* Filters */}
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -111,7 +111,7 @@ const History: React.FC = () => {
                 key={type}
                 onClick={() => setStatusFilter(type)}
                 className={cn(
-                  "px-2.5 py-1 rounded capitalize transition-all",
+                  "px-2.5 py-1 rounded-lg capitalize transition-all",
                   statusFilter === type
                     ? "bg-card text-foreground shadow"
                     : "hover:text-foreground"
@@ -175,7 +175,7 @@ const History: React.FC = () => {
                 <pre className="overflow-x-auto text-[11px] font-semibold text-neutral-300 font-mono pr-12 leading-relaxed">
                   <code>{item.sql}</code>
                 </pre>
-                
+
                 <div className="absolute right-4 top-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleCopy(item.sql)}

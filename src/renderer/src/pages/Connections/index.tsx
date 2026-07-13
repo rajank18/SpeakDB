@@ -111,7 +111,7 @@ const Connections: React.FC = () => {
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/95 transition-all self-start sm:self-auto"
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
           <span>{showAddForm ? 'Hide Form' : 'New Connection'}</span>
@@ -123,7 +123,7 @@ const Connections: React.FC = () => {
         <div className="rounded-xl border border-border/70 bg-card/25 p-6 animate-fade-in max-w-2xl select-none">
           <h3 className="text-sm font-bold text-foreground mb-4">Add Database Connection Credentials</h3>
           <form onSubmit={handleCreateConnection} className="space-y-4">
-            
+
             {/* DB Type Picker */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {dbProviders.map((p) => {
@@ -284,13 +284,13 @@ const Connections: React.FC = () => {
 
       {/* Connection State banner */}
       {connectionStatus === 'connected' && activeConnection && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none">
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
               <CheckCircle className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Active connection established</h4>
+              <h4 className="text-xs font-bold text-primary uppercase tracking-wider">Active connection established</h4>
               <p className="text-[11px] text-muted-foreground">Connected to database &quot;{activeConnection.database}&quot; on {activeConnection.name}. Schema cache refreshed.</p>
             </div>
           </div>
@@ -339,7 +339,7 @@ const Connections: React.FC = () => {
                   className={cn(
                     "rounded-xl border p-5 flex justify-between items-start transition-all relative overflow-hidden",
                     active
-                      ? "border-emerald-500/40 bg-emerald-500/5"
+                      ? "border-primary/80 border-2 "
                       : "border-border/60 bg-card/20 hover:border-border"
                   )}
                 >
@@ -348,7 +348,7 @@ const Connections: React.FC = () => {
                       <Icon className={cn("h-5 w-5", provider?.color || 'text-primary')} />
                       <h4 className="text-xs font-bold text-foreground truncate">{conn.name}</h4>
                       {active && (
-                        <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Active</span>
+                        <span className="text-[9px] bg-primary/10 text-primary border border-primary/20 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Active</span>
                       )}
                     </div>
                     <div className="space-y-1 text-[11px] text-muted-foreground">

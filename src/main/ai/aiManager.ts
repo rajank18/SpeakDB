@@ -46,6 +46,30 @@ export class AIManager {
     }
   }
 
+  private isGreeting(text: string): boolean {
+    const clean = text.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
+    const greetings = ['hello', 'hi', 'hey', 'greetings', 'hola', 'good morning', 'good afternoon', 'good evening', 'yo', 'sup', 'whats up'];
+    return greetings.includes(clean);
+  }
+
+  private isOutOfScopeIdentityQuery(text: string): boolean {
+    const clean = text.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
+    const identityKeywords = [
+      'whats your name',
+      'what is your name',
+      'who are you',
+      'who created you',
+      'whats ur name',
+      'what is ur name',
+      'tell me a joke',
+      'how are you',
+      'how r you',
+      'who is your creator',
+      'what do you do'
+    ];
+    return identityKeywords.includes(clean);
+  }
+
   /**
    * Generates a valid SQL statement based on prompt and compressed schema context
    */
@@ -56,17 +80,58 @@ export class AIManager {
   ): Promise<AISqlResponse> {
     this.verifyAPIKey(config)
 
+    // Local greeting guardrail (fast response, zero token cost)
+    if (this.isGreeting(prompt)) {
+      return {
+        sql: '',
+        explanation: 'Hello! How can I assist you with your databases or SQL queries today?',
+        confidenceScore: 100
+      }
+    }
+
+    // Local out-of-scope identity query guardrail (fast response, zero token cost)
+    if (this.isOutOfScopeIdentityQuery(prompt)) {
+      return {
+        sql: '',
+        explanation: "Sorry, I can't assist with that.",
+        confidenceScore: 100
+      }
+    }
+
     const compressed = compressSchema(schema)
-    const systemPrompt = `You are a PostgreSQL expert writing SQL queries for a database with this schema:
+    const systemPrompt = `You are a strict database expert assistant.
+You are connected to a database with this schema:
 ${compressed}
 
-Translate the user's natural language request into a clean, valid SQL query. 
-Return ONLY a valid JSON object matching this structure:
+Your absolute constraints are:
+1. You can ONLY answer queries or perform tasks related to databases, writing SQL queries (PostgreSQL, SQLite, MariaDB, MySQL, SQL Server), or explaining SQL.
+2. If the user's prompt is a greeting (e.g., "hello", "hi", "hey"), reply with a brief, friendly greeting in the "explanation" field and set the "sql" field to an empty string (""). Do NOT generate any SQL query.
+3. If the user asks about anything else that is NOT related to database tables, queries, SQL syntax, or database administration, you MUST reply strictly and exactly with:
+   "sql": "",
+   "explanation": "Sorry, I can't assist with that."
+4. Under no circumstances should you generate SQL or explain topics unrelated to database queries or schemas.
+
+Few-Shot Examples:
+Input: "hello"
+Output: {"sql": "", "explanation": "Hello! How can I assist you with your database or SQL queries today?"}
+
+Input: "what is your name?"
+Output: {"sql": "", "explanation": "Sorry, I can't assist with that."}
+
+Input: "whats ur name"
+Output: {"sql": "", "explanation": "Sorry, I can't assist with that."}
+
+Input: "write a python script to parse csv files"
+Output: {"sql": "", "explanation": "Sorry, I can't assist with that."}
+
+Input: "show all users that registered in the last 10 days"
+Output: {"sql": "SELECT * FROM \\"users\\" WHERE registered_at >= NOW() - INTERVAL '10 days';", "explanation": "Selects users who registered in the last 10 days"}
+
+Translate the request into the JSON structure:
 {
-  "sql": "SELECT ...",
-  "explanation": "Brief explanation of what the query does"
-}
-Do not include markdown blocks, code formatting, or other text outside the JSON object.`
+  "sql": "SELECT ... or empty string",
+  "explanation": "Explanation text or 'Sorry, I can't assist with that.'"
+}`
 
     const url = config.provider === 'ollama' 
       ? (config.endpointUrl || 'http://localhost:11434/api/chat') 
@@ -106,6 +171,18 @@ Do not include markdown blocks, code formatting, or other text outside the JSON 
       // Fallback: extract SQL if LLM returned wrapped response
       const sqlMatch = content.match(/```sql([\s\S]*?)```/) || content.match(/```([\s\S]*?)```/)
       const sql = sqlMatch ? sqlMatch[1].trim() : content.trim()
+      
+      // If fallback contains greeting or out of scope content, apply safety filter
+      if (this.isGreeting(sql) || sql.toLowerCase().includes("sorry, i can't assist")) {
+        return {
+          sql: '',
+          explanation: this.isGreeting(sql)
+            ? 'Hello! How can I assist you with your databases or SQL queries today?'
+            : "Sorry, I can't assist with that.",
+          confidenceScore: 100
+        }
+      }
+
       return {
         sql,
         explanation: 'Generated SQL based on request.',

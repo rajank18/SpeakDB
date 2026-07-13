@@ -142,8 +142,8 @@ const Schema: React.FC = () => {
 
         {/* Columns Grid */}
         <div className="flex-1 overflow-y-auto space-y-6">
-          <div className="border border-border/80 bg-card/20 rounded-xl overflow-hidden shadow">
-            <table className="w-full text-xs border-collapse text-left">
+          <div className="border border-border/80 bg-card/20 rounded-xl overflow-x-auto shadow">
+            <table className="min-w-full text-xs border-collapse text-left">
               <thead>
                 <tr className="border-b border-border bg-card/40">
                   <th className="p-3.5 font-bold text-muted-foreground uppercase tracking-wider">Column</th>
