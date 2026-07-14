@@ -6,7 +6,7 @@ SpeakDB translates your natural language questions into optimized, secure SQL, e
 
 ---
 
-## 📂 Key Architecture Features
+## Key Architecture Features
 
 * **100% Local Execution**: Because SpeakDB is an Electron desktop app, database connections are established directly from your machine. Your database credentials, schemas, and query results never leave your computer.
 * **Bounded Conversational Memory**: Supports follow-up questions (e.g., *"filter only active users"*) using a sliding-window memory of the last **5 validated turns**. The memory automatically resets if you switch databases or change the schema, preventing context pollution.
@@ -18,7 +18,7 @@ SpeakDB translates your natural language questions into optimized, secure SQL, e
 
 ---
 
-## 🚀 Getting Started & Development
+## Getting Started & Development
 
 ### 1. Setup Environment
 To load API keys automatically on startup, create a `.env` file in the root directory:
@@ -45,7 +45,7 @@ npm run typecheck
 
 ---
 
-## 📦 Production Builds
+## Production Builds
 
 To package the application into a single standalone executable for your operating system:
 
