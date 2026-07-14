@@ -24,9 +24,8 @@ export function registerIPCHandlers(): void {
     return dbManager.testConnection(config)
   })
 
-  // AI IPC Handlers
-  ipcMain.handle('ai:generate-sql', async (_, prompt, schema, config) => {
-    return aiManager.generateSQL(prompt, schema, config)
+  ipcMain.handle('ai:generate-sql', async (_, prompt, schema, config, recentTurns) => {
+    return aiManager.generateSQL(prompt, schema, config, recentTurns)
   })
 
   ipcMain.handle('ai:explain-sql', async (_, sql, schema, config) => {

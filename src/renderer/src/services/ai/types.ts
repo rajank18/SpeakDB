@@ -12,6 +12,20 @@ export interface AISqlResponse {
   potentialWarnings?: string[]
 }
 
+export interface QueryResult {
+  columns: string[]
+  rows: Record<string, any>[]
+  executionTimeMs: number
+  error?: string
+}
+
+export interface ConversationTurn {
+  prompt: string
+  sql: string
+  timestamp: number
+  queryResult?: QueryResult
+}
+
 export interface AIModelConfig {
   provider: 'openrouter' | 'ollama' | 'openai' | 'gemini'
   apiKey?: string
@@ -31,7 +45,8 @@ export interface IAiProvider {
   generateSQL(
     prompt: string,
     schemaContext: DatabaseSchema,
-    config: AIModelConfig
+    config: AIModelConfig,
+    recentTurns?: ConversationTurn[]
   ): Promise<AISqlResponse>
 
   /**

@@ -11,6 +11,7 @@ import { useChatStore } from '../../store/chatStore'
 import { useConnectionStore } from '../../store/connectionStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { cn } from '../../lib/utils'
+import { ConversationTurn } from '../../services/ai/types'
 
 const renderFormattedText = (text: string) => {
   if (!text) return null
@@ -37,6 +38,30 @@ const renderFormattedText = (text: string) => {
   )
 }
 
+const getSchemaFingerprint = (schema: any): string => {
+  if (!schema || !schema.tables || schema.tables.length === 0) return 'empty'
+  return schema.tables
+    .map((table: any) => {
+      const cols = (table.columns || []).map((col: any) => `${col.name}:${col.dataType}`).join(',')
+      return `${table.name}(${cols})`
+    })
+    .join(';')
+}
+
+const isValidTurnResponse = (sql: string, explanation: string): boolean => {
+  if (!sql || !sql.trim()) return false
+  const exp = explanation.toLowerCase()
+  if (
+    exp.includes("sorry, i can't assist") ||
+    exp.includes("i only handle database schema") ||
+    exp.includes("your speakdb ai assistant") ||
+    exp.includes("hello! i'm parser")
+  ) {
+    return false
+  }
+  return true
+}
+
 const Chat: React.FC = () => {
   const {
     threads,
@@ -45,7 +70,9 @@ const Chat: React.FC = () => {
     createThread,
     setActiveThreadId,
     addMessage,
-    setIsGenerating
+    setIsGenerating,
+    getRecentTurns,
+    addRecentTurn
   } = useChatStore()
 
   const {
@@ -134,6 +161,10 @@ const Chat: React.FC = () => {
         schemaContext = await window.electron.ipcRenderer.invoke('db:get-schema')
       }
 
+      const fingerprint = schemaContext ? getSchemaFingerprint(schemaContext) : 'empty'
+      const connId = activeConnection ? activeConnection.id : null
+      const turns = getRecentTurns(targetThreadId, connId, fingerprint)
+
       const settings = useSettingsStore.getState()
       const aiConfig = {
         provider: settings.aiProvider,
@@ -148,13 +179,34 @@ const Chat: React.FC = () => {
         endpointUrl: settings.aiProvider === 'ollama' ? settings.ollamaUrl : undefined
       }
 
-      const aiResponse = await window.electron.ipcRenderer.invoke('ai:generate-sql', userPrompt, schemaContext, aiConfig)
+      const aiResponse = await window.electron.ipcRenderer.invoke(
+        'ai:generate-sql',
+        userPrompt,
+        schemaContext,
+        aiConfig,
+        turns
+      )
 
       addMessage(targetThreadId, {
         role: 'assistant',
         content: aiResponse.explanation,
         sql: aiResponse.sql
       })
+
+      // Store memory turn if it passes validation
+      if (aiResponse && isValidTurnResponse(aiResponse.sql, aiResponse.explanation)) {
+        const turn: ConversationTurn = {
+          prompt: userPrompt,
+          sql: aiResponse.sql,
+          timestamp: Date.now()
+        }
+        addRecentTurn(
+          targetThreadId,
+          turn,
+          connId,
+          fingerprint
+        )
+      }
     } catch (err: any) {
       addMessage(targetThreadId, {
         role: 'assistant',
@@ -185,13 +237,34 @@ const Chat: React.FC = () => {
         queryResult: result
       })
 
+      // Update recent turns in chat store with the execution results
+      const threadsList = useChatStore.getState().threads
+      const activeThreadObj = threadsList.find((t) => t.id === activeThreadId)
+      if (activeThreadObj && activeThreadObj.recentTurns && activeThreadObj.recentTurns.length > 0) {
+        const turns = [...activeThreadObj.recentTurns]
+        const turnIdx = [...turns].reverse().findIndex((t) => t.sql === sql)
+        if (turnIdx !== -1) {
+          const actualIdx = turns.length - 1 - turnIdx
+          turns[actualIdx] = {
+            ...turns[actualIdx],
+            queryResult: result
+          }
+          useChatStore.setState({
+            threads: threadsList.map((t) =>
+              t.id === activeThreadId ? { ...t, recentTurns: turns } : t
+            )
+          })
+        }
+      }
+
       // For queries that return 0 rows (ALTER, CREATE, INSERT, UPDATE, DROP, etc.)
       // set a local interpretation immediately instead of calling the AI
       if (!result || result.error) {
         useChatStore.getState().updateMessage(activeThreadId, msgId, {
           interpretation: `Query failed: ${result?.error || 'Unknown error'}`
         })
-      } else if (result.rows.length === 0) {
+        return
+      } else if (result.rows.length === 0 && !sql.trim().toUpperCase().startsWith('SELECT') && !sql.trim().toUpperCase().startsWith('WITH')) {
         // DDL/DML commands with 0 rows returned
         const upperSql = sql.trim().toUpperCase()
         let action = 'executed'
@@ -254,13 +327,15 @@ const Chat: React.FC = () => {
         })
       }
     } catch (err: any) {
+      const errMsg = err.message || String(err)
       useChatStore.getState().updateMessage(activeThreadId, msgId, {
         queryResult: {
           columns: ['Error'],
-          rows: [{ Error: err.message || String(err) }],
+          rows: [{ Error: errMsg }],
           executionTimeMs: 0,
-          error: err.message
-        }
+          error: errMsg
+        },
+        interpretation: `Query execution failed: ${errMsg}`
       })
     }
   }

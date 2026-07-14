@@ -38,7 +38,22 @@ export const AppLayout: React.FC = () => {
   const [editingThreadId, setEditingThreadId] = React.useState<string | null>(null)
   const [editingTitle, setEditingTitle] = React.useState('')
 
+  const [hydrated, setHydrated] = React.useState(false)
+
   React.useEffect(() => {
+    if (useConnectionStore.persist.hasHydrated()) {
+      setHydrated(true)
+    }
+    const unsub = useConnectionStore.subscribe(() => {
+      if (useConnectionStore.persist.hasHydrated()) {
+        setHydrated(true)
+      }
+    })
+    return unsub
+  }, [])
+
+  React.useEffect(() => {
+    if (!hydrated) return
     const autoConnect = async () => {
       if (activeConnection && connectionStatus !== 'connected') {
         setConnectionStatus('connecting')
@@ -56,7 +71,7 @@ export const AppLayout: React.FC = () => {
       }
     }
     autoConnect()
-  }, [])
+  }, [hydrated, activeConnection])
 
   const handleNewChat = () => {
     const threadId = createThread()

@@ -1,12 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-
-export interface QueryResult {
-  columns: string[]
-  rows: Record<string, any>[]
-  executionTimeMs: number
-  error?: string
-}
+import { ConversationTurn, QueryResult } from '../services/ai/types'
 
 export interface Message {
   id: string
@@ -24,6 +18,9 @@ export interface ChatThread {
   title: string
   createdAt: string
   messages: Message[]
+  recentTurns?: ConversationTurn[]
+  recentTurnsConnectionId?: string | null
+  recentTurnsSchemaFingerprint?: string
 }
 
 interface ChatState {
@@ -38,12 +35,14 @@ interface ChatState {
   clearThreadMessages: (threadId: string) => void
   setIsGenerating: (generating: boolean) => void
   renameThread: (id: string, title: string) => void
+  getRecentTurns: (threadId: string, connectionId: string | null, schemaFingerprint: string) => ConversationTurn[]
+  addRecentTurn: (threadId: string, turn: ConversationTurn, connectionId: string | null, schemaFingerprint: string) => void
 }
 
 export const useChatStore = create<ChatState>()(
   persist(
-    (set) => ({
-      threads: [],
+    (set, get) => ({
+      threads: [] as ChatThread[],
       activeThreadId: null,
       isGenerating: false,
 
@@ -124,7 +123,15 @@ export const useChatStore = create<ChatState>()(
       clearThreadMessages: (threadId) =>
         set((state) => ({
           threads: state.threads.map((t) =>
-            t.id === threadId ? { ...t, messages: [] } : t
+            t.id === threadId
+              ? {
+                  ...t,
+                  messages: [],
+                  recentTurns: [],
+                  recentTurnsConnectionId: undefined,
+                  recentTurnsSchemaFingerprint: undefined
+                }
+              : t
           )
         })),
 
@@ -133,7 +140,51 @@ export const useChatStore = create<ChatState>()(
       renameThread: (id, title) =>
         set((state) => ({
           threads: state.threads.map((t) => (t.id === id ? { ...t, title } : t))
+        })),
+
+      getRecentTurns: (threadId: string, connectionId: string | null, schemaFingerprint: string): ConversationTurn[] => {
+        const thread = get().threads.find((t) => t.id === threadId)
+        if (!thread) return []
+
+        if (
+          thread.recentTurnsConnectionId !== connectionId ||
+          thread.recentTurnsSchemaFingerprint !== schemaFingerprint
+        ) {
+          // Trigger hard reset when switching connection or when schema fingerprint differs
+          set((state) => ({
+            threads: state.threads.map((t) =>
+              t.id === threadId
+                ? {
+                    ...t,
+                    recentTurns: [],
+                    recentTurnsConnectionId: connectionId,
+                    recentTurnsSchemaFingerprint: schemaFingerprint
+                  }
+                : t
+            )
+          }))
+          return []
+        }
+
+        return thread.recentTurns || []
+      },
+
+      addRecentTurn: (threadId: string, turn: ConversationTurn, connectionId: string | null, schemaFingerprint: string): void => {
+        set((state) => ({
+          threads: state.threads.map((t) => {
+            if (t.id === threadId) {
+              const currentTurns = (t.recentTurns || []).slice(-4) // Bounded sliding window: keep max 5
+              return {
+                ...t,
+                recentTurns: [...currentTurns, turn],
+                recentTurnsConnectionId: connectionId,
+                recentTurnsSchemaFingerprint: schemaFingerprint
+              }
+            }
+            return t
+          })
         }))
+      }
     }),
     {
       name: 'speakdb-chats'
