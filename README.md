@@ -4,6 +4,8 @@
 
 SpeakDB translates your natural language questions into optimized, secure SQL, executes them against your database, and presents the output in structured data grids accompanied by natural-language summaries.
 
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
 ---
 
 ## 📂 Key Architecture Features
