@@ -6,6 +6,9 @@ SpeakDB translates your natural language questions into optimized, secure SQL, e
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
+Download SpeakDB for Windows -> [Download SpeakDB v1.0.0](https://github.com/rajank18/SpeakDB/releases/download/v1.0.0/speakdb-1.0.0-setup.exe)
+
+
 ---
 
 ## Key Architecture Features
